@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Nova Monitor</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+html,body{
+  width:100%;height:100%;
+  overflow:hidden;
+  background:#000;
+  font-family:'Courier New',Courier,monospace;
+  color:#ccc;
+  user-select:none;
+}
+
+/* ── 3-column layout ── */
+#root{
+  display:grid;
+  grid-template-columns:33% 1fr 33%;
+  width:100vw;
+  height:100vh;
+}
+
+/* ── LEFT: full history log ── */
+#left{
+  position:relative;
+  overflow:hidden;
+  border-right:1px solid rgba(255,255,255,0.05);
+}
+#left-track{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  position:absolute;
+  bottom:0;
+  left:0; right:0;
+  padding:8px 10px;
+}
+.line{
+  font-size:11.5px;
+  line-height:1.55;
+  color:#bbb;
+  word-break:break-word;
+  white-space:pre-wrap;
+  animation:appear .3s ease;
+}
+@keyframes appear{from{opacity:0}to{opacity:1}}
+
+/* ── CENTER: video ── */
+#center{
+  position:relative;
+  overflow:hidden;
+  background:#000;
+}
+#jvid{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center top;
+  display:block;
+}
+
+/* ── RIGHT: live activity feed ── */
+#right{
+  position:relative;
+  overflow:hidden;
+  border-left:1px solid rgba(255,255,255,0.05);
+}
+#right-track{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  position:absolute;
+  bottom:0;
+  left:0; right:0;
+  padding:8px 10px;
+}
+.rline{
+  font-size:11.5px;
+  line-height:1.55;
+  color:#999;
+  word-break:break-word;
+  white-space:pre-wrap;
+  animation:appear .3s ease;
+}
+.rline.placeholder{color:rgba(255,255,255,0.22);}
+.rline.tx  {color:#7dffb3;}
+.rline.reg {color:#7dd4ff;}
+.rline.warn{color:#ffb84d;}
+.rline.err {color:#ff5566;}
+.rline.sys {color:#888;}
+
+/* Scanlines */
+body::after{
+  content:'';
+  position:fixed;inset:0;z-index:9999;
+  pointer-events:none;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,transparent 2px,
+    rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px
+  );
+}
+</style>
+<style>
+  #monitor-blocked {
+    display: none;
+    position: fixed; inset: 0;
+    background: #000;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+  }
+  @media (max-width: 1024px) {
+    #monitor-blocked { display: flex; }
+  }
+</style>
+</head>
+<body>
+  <div id="monitor-blocked">Monitor only available on desktop.</div>
+  <div id="root">
+
+  <!-- LEFT: Full event history -->
+  <div id="left">
+    <div id="left-track"></div>
+  </div>
+
+  <!-- CENTER: Video -->
+  <div id="center">
+    <video id="jvid" autoplay muted loop playsinline>
+      <source src="/static/nova.mp4" type="video/mp4"/>
+      <source src="nova.mp4" type="video/mp4"/>
+    </video>
+  </div>
+
+  <!-- RIGHT: Live activity stream -->
+  <div id="right">
+    <div id="right-track">
+      <div class="rline placeholder">Waiting for live events...</div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ── NOVA Monitor — SSE client
+// Left  = full history log (every event type)
+// Right = activity summary (key events only: TX, RX, register, order, broadcast, error)
+// No storage. Display only. No UI noise.
+
+const leftTrack  = document.getElementById('left-track');
+const rightTrack = document.getElementById('right-track');
+const MAX_LINES  = 200;
+
+// Pass ?secret= through to API endpoints so the monitor page works
+// regardless of where the query string is placed.
+const _secret = new URLSearchParams(window.location.search).get('secret') || '';
+function _qs(){ return _secret ? '?secret=' + encodeURIComponent(_secret) : ''; }
+
+function addLeft(text, cls=''){
+  const el = document.createElement('div');
+  el.className = 'line' + (cls ? ' '+cls : '');
+  el.textContent = text;
+  leftTrack.appendChild(el);
+  while(leftTrack.children.length > MAX_LINES)
+    leftTrack.removeChild(leftTrack.firstChild);
+}
+
+function addRight(text, cls=''){
+  const ph = rightTrack.querySelector('.placeholder');
+  if(ph) ph.remove();
+  const el = document.createElement('div');
+  el.className = 'rline' + (cls ? ' '+cls : '');
+  el.textContent = text;
+  rightTrack.appendChild(el);
+  while(rightTrack.children.length > MAX_LINES)
+    rightTrack.removeChild(rightTrack.firstChild);
+}
+
+function ts(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+}
+
+// ── Event dispatcher ─────────────────────────────────────────────────────────
+function handleEvent(d){
+  const t = ts();
+  switch(d.type){
+
+    case 'CONNECTED':
+      addLeft(`[${t}] ◉ Stream connected.`, 'sys');
+      addRight(`[${t}] ◉ Live feed active.`, 'sys');
+      break;
+
+    case 'PING': break; // silent keepalive
+
+    // ── Stats snapshot summary ──
+    case 'STATS':
+      addLeft(
+        `[${t}] STATS — Users:${d.total_users}  TXs:${d.total_tx}  `+
+        `Coins:${d.total_coins}  Orders:${d.total_orders}  Purchased:${d.total_purchased}`
+      );
+      break;
+
+    // ── Coin transfers ──
+    case 'COIN_SEND':
+      addLeft(`[${t}] ${d.payer} → ${d.receiver}  |  ◎${d.amount}  |  ${d.created_at}`, 'tx');
+      addRight(`[${t}] TX: ${d.payer} → ${d.receiver} · ◎${d.amount}`, 'tx');
+      break;
+
+    case 'COIN_RECEIVE':
+      addRight(`[${t}] RX: ${d.receiver} ← ${d.payer} · ◎${d.amount}`, 'tx');
+      break;
+
+    // ── Registration ──
+    case 'REGISTER':
+      addLeft(`[${t}] NEW USER: ${d.full_name} (@${d.code_name})  ${d.email}  ${d.created_at}`, 'reg');
+      addRight(`[${t}] Registered: ${d.full_name} as @${d.code_name}`, 'reg');
+      break;
+
+    // ── Auth ──
+    case 'LOGIN':
+      addLeft(`[${t}] LOGIN: @${d.code_name}  method:${d.method}`, 'sys');
+      addRight(`[${t}] Login: @${d.code_name}`, 'sys');
+      break;
+
+    case 'LOGOUT':
+      addLeft(`[${t}] LOGOUT: @${d.code_name}`, 'sys');
+      break;
+
+    // ── OTP ──
+    case 'OTP':
+      addLeft(`[${t}] OTP → ${d.target}  purpose:${d.purpose}`, 'sys');
+      break;
+
+    // ── QR ──
+    case 'QR_GENERATED':
+      addLeft(`[${t}] QR generated: @${d.code_name}`, 'sys');
+      break;
+
+    case 'QR_SCANNED':
+      addLeft(`[${t}] QR scanned: @${d.code_name} → @${d.receiver}`, 'tx');
+      break;
+
+    // ── Profile ──
+    case 'PROFILE':
+      addLeft(`[${t}] PROFILE saved: @${d.code_name}`, 'sys');
+      break;
+
+    // ── Messaging ──
+    case 'MESSAGE':
+      addLeft(`[${t}] MSG: @${d.from_user} → @${d.to_user}`, 'sys');
+      addRight(`[${t}] MSG: @${d.from_user} → @${d.to_user}`, 'sys');
+      break;
+
+    // ── Connections ──
+    case 'CONNECT':
+      addLeft(`[${t}] CONNECT: @${d.from_user} → @${d.to_user}  [${d.status}]`, 'sys');
+      break;
+
+    // ── Run / Earn ──
+    case 'RUN':
+      addLeft(`[${t}] RUN: @${d.code_name}  ${d.distance_km} km  +◎${d.coins}`, 'sys');
+      break;
+
+    case 'RUN_EARN':
+      addRight(`[${t}] RUN: @${d.code_name}  ${d.distance_km} km → +◎${d.coins}`, 'tx');
+      break;
+
+    // ── Coin purchases (Razorpay) ──
+    case 'COIN_PURCHASE':
+      addLeft(`[${t}] COIN BUY: @${d.code_name}  ◎${d.coins}  ₹${d.amount_inr}  inv:${d.invoice_no||'—'}`, 'tx');
+      addRight(`[${t}] Purchase: @${d.code_name}  ◎${d.coins} for ₹${d.amount_inr}`, 'tx');
+      break;
+
+    case 'COIN_REFUND':
+      addLeft(`[${t}] REFUND: @${d.receiver}  +◎${d.amount}`, 'warn');
+      addRight(`[${t}] REFUND: @${d.receiver} +◎${d.amount}`, 'warn');
+      break;
+
+    // ── Store orders ──
+    case 'STORE_ORDER_COIN':
+      addLeft(`[${t}] ORDER (coin): @${d.code_name}  "${d.product}"  ◎${d.coins_spent}  #${d.order_no}`, 'tx');
+      addRight(`[${t}] Order: @${d.code_name} → "${d.product}" [◎${d.coins_spent}]`, 'tx');
+      break;
+
+    case 'STORE_ORDER_INR':
+      addLeft(`[${t}] ORDER (INR): @${d.code_name}  "${d.product}"  ₹${d.inr_paid}  #${d.order_no}`, 'tx');
+      addRight(`[${t}] Order: @${d.code_name} → "${d.product}" [₹${d.inr_paid}]`, 'tx');
+      break;
+
+    case 'ORDER_STATUS':
+      addLeft(`[${t}] ORDER STATUS: #${d.order_no}  @${d.code_name}  → ${d.status}`, 'warn');
+      addRight(`[${t}] Order #${d.order_no} → ${d.status}`, 'warn');
+      break;
+
+    // ── Coin to cash ──
+    case 'COIN_TO_CASH':
+      addLeft(`[${t}] CASH REQ: @${d.code_name}  ◎${d.coins||d.amount}`, 'warn');
+      addRight(`[${t}] Cash request: @${d.code_name}  ◎${d.coins||d.amount}`, 'warn');
+      break;
+
+    // ── Contact form ──
+    case 'CONTACT':
+      addLeft(`[${t}] CONTACT: ${d.name} (${d.email})`, 'warn');
+      break;
+
+    // ── Broadcasts ──
+    case 'BROADCAST':
+      addLeft(`[${t}] BROADCAST [${d.by}]: ${d.title} — ${d.body}`, 'warn');
+      addRight(`[${t}] Broadcast: ${d.title}`, 'warn');
+      break;
+
+    // ── Admin coin adjustment ──
+    case 'ADMIN_COIN_ADJ':
+      addLeft(
+        `[${t}] ADMIN ADJ: ${d.admin} → @${d.target}  `+
+        `${d.amount > 0 ? '+' : ''}${d.amount} coins  ${d.note||''}`,
+        'warn'
+      );
+      addRight(`[${t}] Admin adj: @${d.target} ${d.amount > 0 ? '+' : ''}${d.amount}`, 'warn');
+      break;
+
+    // ── Generic admin action ──
+    case 'ADMIN':
+      addLeft(`[${t}] ADMIN: ${d.admin}  ${d.action}  ${d.detail||''}`, 'warn');
+      addRight(`[${t}] Admin: ${d.action}`, 'warn');
+      break;
+
+    // ── Errors ──
+    case 'ERROR':
+      addLeft(`[${t}] ERROR [${d.route}]: ${d.msg}`, 'err');
+      addRight(`[${t}] ERROR: ${d.msg}`, 'err');
+      break;
+
+    default:
+      if(d.type && d.type !== 'PING')
+        addLeft(`[${t}] ${JSON.stringify(d).substring(0,120)}`, 'sys');
+  }
+}
+
+// ── DB Snapshot on load ───────────────────────────────────────────────────────
+async function loadSnapshot(){
+  try{
+    const r    = await fetch('/api/monitor/snapshot' + _qs());
+    const data = await r.json();
+    if(!data.ok){
+      addLeft(`[${ts()}] Snapshot failed: ${data.error||'unknown'}`, 'err');
+      return;
+    }
+
+    const s = data.stats;
+    addLeft(
+      `[${ts()}] DB — Users:${s.total_users}  TXs:${s.total_tx}  `+
+      `Coins:${s.total_coins}  Orders:${s.total_orders}  Purchased:${s.total_purchased}`
+    );
+
+    // Transactions (oldest → newest so newest ends at bottom)
+    const txs = [...(data.transactions||[])].reverse();
+    txs.forEach(t=>{
+      addLeft(
+        `[${ts()}] ${t.payer_code_name} → ${t.receiver_code_name}  |  ◎${t.amount}  |  ${t.created_at}`,
+        'tx'
+      );
+    });
+
+    // Recent users
+    const users = [...(data.users||[])].reverse();
+    users.forEach(u=>{
+      addLeft(`[${ts()}] USER: ${u.full_name||'?'} (@${u.code_name})  joined ${u.created_at}`, 'reg');
+    });
+
+    // Broadcasts
+    if(data.broadcasts && data.broadcasts.length){
+      data.broadcasts.forEach(b=>{
+        addLeft(`[${ts()}] BROADCAST [${b.by}]: ${b.title} — ${b.body}`, 'warn');
+      });
+    }
+
+    // Run sessions
+    if(data.runs && data.runs.length){
+      [...data.runs].reverse().forEach(r=>{
+        if(r.coins > 0)
+          addLeft(`[${ts()}] RUN: @${r.code_name}  ${r.distance_km} km  +◎${r.coins}  ${r.created_at}`, 'sys');
+      });
+    }
+
+    // Coin purchases
+    if(data.purchases && data.purchases.length){
+      [...data.purchases].reverse().forEach(p=>{
+        addLeft(`[${ts()}] COIN BUY: @${p.code_name}  ◎${p.coins}  ₹${p.amount_inr}  ${p.created_at}`, 'tx');
+      });
+    }
+
+    // Store orders
+    if(data.orders && data.orders.length){
+      [...data.orders].reverse().forEach(o=>{
+        const pay = o.method === 'COIN' ? `◎${o.coins_spent}` : `₹${o.inr_paid}`;
+        addLeft(`[${ts()}] ORDER: @${o.code_name}  "${o.product}"  ${pay}  ${o.status}`, 'tx');
+      });
+    }
+
+    addLeft(`[${ts()}] ── Snapshot loaded. Watching live events... ──`, 'sys');
+  } catch(e){
+    addLeft(`[${ts()}] Snapshot error: ${e.message}`, 'err');
+  }
+}
+
+// ── SSE with exponential-backoff auto-reconnect ───────────────────────────────
+let sseRetry = 0;
+function connectSSE(){
+  const es = new EventSource('/api/monitor/stream' + _qs());
+  es.onmessage = e => {
+    try{ handleEvent(JSON.parse(e.data)); } catch(_){}
+  };
+  es.onopen = () => {
+    sseRetry = 0; // reset backoff on successful connect
+  };
+  es.onerror = ()=>{
+    es.close();
+    sseRetry = Math.min(sseRetry + 1, 6);
+    const wait = 1500 * Math.pow(1.8, sseRetry);
+    addLeft(`[${ts()}] ✖ Connection lost. Retrying in ${Math.round(wait/1000)}s...`, 'err');
+    addRight(`[${ts()}] Reconnecting...`, 'err');
+    setTimeout(connectSSE, wait);
+  };
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+addLeft(`[${ts()}] Nova Monitor starting...`, 'sys');
+loadSnapshot().then(() => connectSSE());
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
+</script>
+</body>
+</html>
