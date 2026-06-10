@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Nova Store — Luxury Timepieces</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+/* ── ROOT ───────────────────────────────────────────────────── */
+:root{
+  --bg:#0a0a0a;--card:#141414;--card2:#1c1c1c;--surface:#111;
+  --text:#f0f0f0;--muted:#888;--gold:#c9a030;--gold2:#f0cc68;
+  --border:rgba(201,160,48,.3);--danger:#e84040;--ok:#2ecc71;
+  --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);
+  font-family:'Inter',sans-serif;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 900px 500px at 50% -100px,rgba(201,160,48,.08),transparent 60%);z-index:0;}
+
+/* ── TOPBAR ─────────────────────────────────────────────────── */
+.topbar{
+  position:sticky;top:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 20px;
+  background:rgba(10,10,10,.92);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(16px);
+}
+.topbar-logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.logo-ball{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle at 35% 30%,#f0cc68,#c9a030 45%,#6a5010);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#000;letter-spacing:1px;
+  box-shadow:0 0 14px rgba(201,160,48,.45);position:relative;overflow:hidden;
+}
+.logo-ball::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.5),transparent 55%);}
+.logo-wordmark{font-size:20px;font-weight:800;color:var(--gold2);letter-spacing:2px;}
+.logo-sub{font-size:9px;color:var(--muted);letter-spacing:3px;margin-top:-2px;text-transform:uppercase;}
+
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.coin-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;background:rgba(201,160,48,.1);
+  border:1px solid var(--border);border-radius:40px;
+  font-size:12px;font-weight:600;color:var(--gold2);
+}
+.coin-dot{
+  width:14px;height:14px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle at 35% 30%,#f0cc68,#c9a030 50%,#6a5010);
+  box-shadow:0 0 6px rgba(201,160,48,.6);
+}
+.user-code{font-size:11px;color:var(--muted);}
+.btn{
+  padding:8px 18px;border-radius:8px;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.5px;border:none;transition:all .18s;
+}
+.btn-gold{background:var(--gold);color:#000;}
+.btn-gold:hover{background:var(--gold2);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--gold2);}
+.btn-outline:hover{background:rgba(201,160,48,.1);}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.12);color:var(--muted);}
+.btn-ghost:hover{color:var(--text);border-color:rgba(255,255,255,.3);}
+
+/* ── STORE HEADER ───────────────────────────────────────────── */
+.store-header{
+  padding:32px 20px 0;
+}
+.store-hint{font-size:13px;color:var(--muted);margin-bottom:16px;}
+.cat-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+.cat-btn{
+  padding:6px 18px;border-radius:8px;cursor:pointer;
+  font-size:13px;font-weight:600;transition:all .18s;
+  border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--muted);
+  font-family:'Inter',sans-serif;
+}
+.cat-btn.active{background:var(--gold);color:#000;border-color:var(--gold);}
+.cat-btn:hover:not(.active){border-color:var(--gold);color:var(--gold2);}
+
+/* ── PRODUCT GRID ───────────────────────────────────────────── */
+.products-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:16px;padding:0 20px 60px;
+}
+.prod-card{
+  background:var(--card);border:1px solid rgba(255,255,255,.07);
+  border-radius:var(--radius);overflow:hidden;cursor:pointer;
+  transition:transform .22s,border-color .22s,box-shadow .22s;
+  display:flex;flex-direction:column;
+}
+.prod-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(201,160,48,.4);
+  box-shadow:0 12px 36px rgba(0,0,0,.5);
+}
+.prod-img-wrap{
+  width:100%;height:190px;overflow:hidden;
+  background:#1a1a1a;position:relative;flex-shrink:0;
+}
+.prod-img{width:100%;height:100%;object-fit:cover;transition:transform .4s;}
+.prod-card:hover .prod-img{transform:scale(1.05);}
+.prod-img-placeholder{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:60px;opacity:.2;background:#181818;
+}
+.prod-info{padding:12px 14px 14px;flex:1;display:flex;flex-direction:column;gap:6px;}
+.prod-cat{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:600;text-transform:uppercase;}
+.prod-name{font-size:15px;font-weight:700;line-height:1.25;}
+.price-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.price-coins{
+  display:flex;align-items:center;gap:4px;
+  font-size:14px;font-weight:700;color:var(--gold2);
+}
+.price-inr{font-size:13px;color:var(--muted);}
+.pay-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.pay-tag{
+  padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600;
+  display:flex;align-items:center;gap:3px;
+}
+.pay-tag-coin{background:rgba(201,160,48,.15);color:var(--gold2);border:1px solid rgba(201,160,48,.3);}
+.pay-tag-inr{background:rgba(255,255,255,.06);color:#ccc;border:1px solid rgba(255,255,255,.12);}
+.stock-txt{font-size:11px;color:var(--muted);}
+.stock-low{color:#e8a040;}
+
+/* ── DETAIL VIEW ────────────────────────────────────────────── */
+.detail-shell{display:none;padding:0 20px 80px;}
+.detail-topbar{padding:14px 20px;display:flex;justify-content:space-between;align-items:center;}
+.back-btn{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;padding:7px 14px;cursor:pointer;
+  font-size:13px;font-weight:500;color:var(--text);transition:all .18s;
+  font-family:'Inter',sans-serif;
+}
+.back-btn:hover{background:rgba(255,255,255,.1);}
+
+.detail-img-wrap{
+  width:100%;max-height:400px;overflow:hidden;border-radius:12px;
+  background:#1a1a1a;position:relative;cursor:zoom-in;margin-bottom:20px;
+}
+.detail-img{width:100%;max-height:400px;object-fit:cover;display:block;
+  transition:transform .35s;}
+.detail-img:hover{transform:scale(1.03);}
+.zoom-hint{
+  position:absolute;bottom:10px;right:12px;
+  background:rgba(0,0,0,.6);color:#ccc;font-size:11px;
+  padding:4px 10px;border-radius:20px;pointer-events:none;
+  backdrop-filter:blur(4px);
+}
+.detail-cat{font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:600;text-transform:uppercase;margin-bottom:6px;}
+.detail-name{font-size:26px;font-weight:800;margin-bottom:8px;}
+.detail-desc{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:18px;}
+
+.price-box{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:14px 16px;margin-bottom:14px;
+}
+.price-box-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;}
+.price-box-label{font-size:13px;color:var(--muted);}
+.price-box-val{font-size:15px;font-weight:700;}
+.price-box-val.gold{color:var(--gold2);}
+.price-box-svc{font-size:12px;color:var(--muted);}
+.stock-line{font-size:13px;color:var(--muted);margin-bottom:14px;}
+
+/* Payment Toggle */
+.pay-toggle{display:flex;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.1);margin-bottom:14px;}
+.pay-toggle-btn{
+  flex:1;padding:13px;cursor:pointer;font-family:'Inter',sans-serif;
+  font-size:13px;font-weight:600;background:transparent;border:none;
+  color:var(--muted);transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.pay-toggle-btn.active{background:var(--gold);color:#000;}
+.pay-toggle-btn:not(.active):hover{background:rgba(255,255,255,.06);color:var(--text);}
+
+.total-info{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:13px;color:var(--muted);
+}
+.total-info strong{color:var(--gold2);}
+
+/* Delivery */
+.section-label{font-size:11px;letter-spacing:2px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:10px;}
+.field-wrap{margin-bottom:12px;}
+.field-input{
+  width:100%;background:var(--card2);border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;padding:12px 14px;color:var(--text);
+  font-family:'Inter',sans-serif;font-size:14px;outline:none;
+  transition:border-color .18s;
+}
+.field-input:focus{border-color:rgba(201,160,48,.6);}
+.field-input[type=password]{background:#fff;color:#000;}
+.map-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.map-btn{
+  padding:8px 14px;background:transparent;border:1px solid rgba(255,255,255,.2);
+  border-radius:8px;color:var(--text);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:all .18s;
+}
+.map-btn:hover{border-color:var(--gold);color:var(--gold2);}
+.map-hint{font-size:12px;color:var(--muted);}
+
+.confirm-btn{
+  width:100%;padding:16px;background:var(--gold);color:#000;
+  border:none;border-radius:10px;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:15px;font-weight:700;
+  transition:all .2s;margin-top:6px;
+}
+.confirm-btn:hover{background:var(--gold2);transform:translateY(-1px);}
+.confirm-btn:disabled{background:#333;color:#666;cursor:not-allowed;transform:none;}
+
+/* ── AUTH MODAL ─────────────────────────────────────────────── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px);padding:16px;
+}
+.overlay.open{display:flex;animation:fadeIn .2s;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;width:100%;max-width:400px;
+  max-height:90vh;overflow-y:auto;
+  animation:slideUp .22s ease;
+  box-shadow:0 30px 80px rgba(0,0,0,.8),0 0 40px rgba(201,160,48,.08);
+}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-head{
+  padding:20px 20px 16px;display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.modal-title{font-size:18px;font-weight:700;}
+.close-btn{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px;transition:color .18s;}
+.close-btn:hover{color:var(--text);}
+
+.auth-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.07);}
+.auth-tab{
+  flex:1;padding:12px;background:none;border:none;border-bottom:2px solid transparent;
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--muted);
+  cursor:pointer;transition:all .18s;margin-bottom:-1px;letter-spacing:.5px;
+}
+.auth-tab.active{color:var(--gold2);border-bottom-color:var(--gold);}
+
+.auth-body{padding:20px;}
+.auth-field{margin-bottom:14px;}
+.auth-field label{
+  display:block;font-size:11px;letter-spacing:1.5px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:6px;font-weight:600;
+}
+.auth-submit{
+  width:100%;padding:13px;background:var(--gold);color:#000;
+  border:none;border-radius:8px;cursor:pointer;margin-top:6px;
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:.5px;transition:all .18s;
+}
+.auth-submit:hover{background:var(--gold2);}
+.auth-switch{font-size:12px;color:var(--muted);text-align:center;margin-top:14px;}
+.auth-switch span{color:var(--gold2);cursor:pointer;text-decoration:underline;}
+
+/* ── MESSAGES ───────────────────────────────────────────────── */
+.msg{font-size:12px;padding:9px 12px;border-radius:7px;margin-top:10px;display:none;line-height:1.5;}
+.msg.ok{background:rgba(46,204,113,.1);color:var(--ok);display:block;}
+.msg.err{background:rgba(232,64,64,.1);color:var(--danger);display:block;}
+
+/* ── TOAST ──────────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:24px;right:20px;z-index:9999;
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:12px 18px;font-size:13px;
+  box-shadow:0 8px 28px rgba(0,0,0,.6);
+  transform:translateY(70px);opacity:0;transition:all .28s;max-width:300px;
+}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{border-color:var(--ok);color:var(--ok);}
+.toast.err{border-color:var(--danger);color:var(--danger);}
+
+/* ── MAP MODAL ──────────────────────────────────────────────── */
+#mapOverlay .modal{max-width:560px;}
+#map{width:100%;height:340px;background:#111;border-radius:8px;margin-bottom:12px;}
+
+/* ── ORDER SUCCESS ──────────────────────────────────────────── */
+.success-shell{display:none;text-align:center;padding:80px 20px;}
+.success-icon{font-size:64px;margin-bottom:20px;}
+.success-title{font-size:26px;font-weight:800;color:var(--ok);margin-bottom:8px;}
+.success-order{font-size:13px;color:var(--muted);margin-bottom:24px;}
+
+/* ── SPINNER ─────────────────────────────────────────────────── */
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── LOADING SKELETON ───────────────────────────────────────── */
+.skeleton{background:linear-gradient(90deg,#1a1a1a 25%,#242424 50%,#1a1a1a 75%);
+  background-size:200% 100%;animation:shimmer 1.3s infinite;border-radius:8px;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* ── RESPONSIVE ─────────────────────────────────────────────── */
+@media(max-width:600px){
+  .topbar{padding:8px 12px;}
+  .products-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:0 12px 60px;}
+  .store-header,.detail-shell{padding-left:12px;padding-right:12px;}
+  .detail-topbar{padding:12px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ────────────────────────────────────────────────── -->
+<div class="topbar">
+  <div class="topbar-logo" onclick="showGrid()">
+    <div class="logo-ball">N</div>
+    <div>
+      <div class="logo-wordmark">NOVA</div>
+      <div class="logo-sub">Store</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div id="authBtns" style="display:flex;gap:8px;">
+      <button class="btn btn-outline" onclick="openAuth('login')">Sign In</button>
+      <button class="btn btn-gold" onclick="openAuth('register')">Sign Up</button>
+    </div>
+    <div id="userChip" style="display:none;align-items:center;gap:10px;">
+      <div class="coin-chip">
+        <div class="coin-dot"></div>
+        <span id="chipCoins">0</span>
+      </div>
+      <span class="user-code" id="chipCode">—</span>
+      <button class="btn btn-ghost" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- STORE GRID VIEW                                           -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="gridView">
+  <div class="store-header">
+    <div class="store-hint" id="storeHint">Pay with Nova Coins or Razorpay. 1 Coin = ₹10,000</div>
+    <div class="cat-row" id="catRow">
+      <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">All</button>
+    </div>
+  </div>
+  <div class="products-grid" id="productsGrid">
+    <!-- skeleton cards -->
+    <div style="height:280px;" class="skeleton"></div>
+    <div style="height:280px;" class="skeleton"></div>
+    <div style="height:280px;" class="skeleton"></div>
+    <div style="height:280px;" class="skeleton"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- DETAIL VIEW                                               -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="detailView" class="detail-shell">
+  <div class="detail-topbar">
+    <button class="back-btn" onclick="showGrid()">← All Products</button>
+    <div id="adminBtnWrap" style="display:none;">
+      <button class="btn btn-ghost" style="font-size:11px;">⚙ Admin</button>
+    </div>
+  </div>
+
+  <div style="padding:0 20px 20px;" id="detailInner"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- ORDER SUCCESS                                             -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="successView" class="success-shell">
+  <div class="success-icon">✅</div>
+  <div class="success-title">Order Placed!</div>
+  <div class="success-order" id="successText"></div>
+  <button class="btn btn-gold" style="margin-top:16px;" onclick="showGrid()">Continue Shopping</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- AUTH MODAL                                                -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="overlay" id="authOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="authModalTitle">Sign In</div>
+      <button class="close-btn" onclick="closeAuth()">✕</button>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" id="tabReg" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="auth-body" id="panelLogin">
+      <div class="auth-field">
+        <label>Code Name</label>
+        <input class="field-input" id="lCode" type="text" placeholder="YOURCODE"
+          style="text-transform:uppercase;letter-spacing:3px;font-weight:700;" maxlength="20"/>
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input class="field-input" id="lPass" type="password" placeholder="Your password"/>
+      </div>
+      <button class="auth-submit" id="btnLogin" onclick="doLogin()">Sign In</button>
+      <div class="msg" id="loginMsg"></div>
+      <div class="auth-switch">New here? <span onclick="switchAuthTab('register')">Create account</span></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="auth-body" id="panelReg" style="display:none;">
+      <div class="auth-field">
+        <label>Full Name</label>
+        <input class="field-input" id="rName" type="text" placeholder="Your full name"/>
+      </div>
+      <div class="auth-field">
+        <label>Code Name <span style="font-size:9px;color:var(--muted);letter-spacing:0;">(5–7 chars)</span></label>
+        <input class="field-input" id="rCode" type="text" maxlength="7" placeholder="MYCODE"
+          style="text-transform:uppercase;letter-spacing:3px;font-weight:700;"/>
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input class="field-input" id="rEmail" type="email" placeholder="you@example.com"/>
+      </div>
+      <div class="auth-field">
+        <label>Mobile <span style="font-size:9px;color:var(--muted);letter-spacing:0;">(optional)</span></label>
+        <input class="field-input" id="rPhone" type="tel" placeholder="9876543210" maxlength="10"/>
+      </div>
+      <div class="auth-field">
+        <label>Password <span style="font-size:9px;color:var(--muted);letter-spacing:0;">(12–16 chars)</span></label>
+        <input class="field-input" id="rPass" type="password" placeholder="Create a strong password" maxlength="16"/>
+      </div>
+      <div class="auth-field">
+        <label>Confirm Password</label>
+        <input class="field-input" id="rPass2" type="password" placeholder="Re-enter password" maxlength="16"/>
+      </div>
+      <button class="auth-submit" id="btnReg" onclick="doRegister()">Create Account</button>
+      <div class="msg" id="regMsg"></div>
+      <div class="auth-switch">Already have an account? <span onclick="switchAuthTab('login')">Sign in</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MAP MODAL (Delivery address picker)                       -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="overlay" id="mapOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Choose Location</div>
+      <button class="close-btn" onclick="closeMapModal()">✕</button>
+    </div>
+    <div style="padding:16px;">
+      <div id="map"></div>
+      <div id="mapAddress" style="font-size:13px;color:var(--muted);margin-bottom:12px;min-height:20px;"></div>
+      <button class="confirm-btn" onclick="applyMapAddress()">Use This Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ─────────────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════
+const API = 'https://novawatch.onrender.com';
+let RAZORPAY_KEY = '';   // fetched from /api/me → settings or config
+
+const S = {
+  user: null,           // { code_name, coinvalue, coin }
+  products: [],
+  settings: {},
+  filtered: [],
+  currentCat: 'all',
+  currentProduct: null,
+  payMethod: 'coins',   // 'coins' | 'razorpay'
+  mapLatLng: null,
+  pendingRzOrder: null, // razorpay order data for verify step
+};
+
+// ════════════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  await tryRestoreSession();
+  await loadProducts();
+
+  // enter key support
+  document.getElementById('lPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('rPass2').addEventListener('keydown', e => { if(e.key==='Enter') doRegister(); });
+
+  // close overlays on backdrop click
+  document.getElementById('authOverlay').addEventListener('click', e => { if(e.target.id==='authOverlay') closeAuth(); });
+  document.getElementById('mapOverlay').addEventListener('click', e => { if(e.target.id==='mapOverlay') closeMapModal(); });
+});
+
+// ════════════════════════════════════════════════════════════
+// API HELPERS
+// ════════════════════════════════════════════════════════════
+async function api(path, method='GET', body) {
+  const opts = { method, credentials:'include', headers:{'Content-Type':'application/json'} };
+  if(body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  return r.json();
+}
+
+// ════════════════════════════════════════════════════════════
+// SESSION
+// ════════════════════════════════════════════════════════════
+async function tryRestoreSession() {
+  try {
+    const d = await api('/api/me');
+    if(d.ok) setUser(d);
+  } catch {}
+}
+
+function setUser(d) {
+  S.user = { code_name: d.code_name, coinvalue: d.coinvalue, coin: d.coin };
+  document.getElementById('authBtns').style.display = 'none';
+  const uc = document.getElementById('userChip');
+  uc.style.display = 'flex';
+  document.getElementById('chipCoins').textContent = d.coinvalue;
+  document.getElementById('chipCode').textContent = d.code_name;
+}
+
+function clearUser() {
+  S.user = null;
+  document.getElementById('authBtns').style.display = 'flex';
+  document.getElementById('userChip').style.display = 'none';
+}
+
+// ════════════════════════════════════════════════════════════
+// PRODUCTS
+// ════════════════════════════════════════════════════════════
+async function loadProducts() {
+  try {
+    const d = await api('/api/store/products');
+    if(!d.ok) { showGridError('Could not load products.'); return; }
+    S.products = d.products || [];
+    S.settings = d.settings || {};
+    // Razorpay key from settings if present
+    if(d.settings?.razorpay_key_id) RAZORPAY_KEY = d.settings.razorpay_key_id;
+    const rate = S.settings.coin_to_inr || '10,000';
+    document.getElementById('storeHint').textContent =
+      `Pay with Nova Coins or Razorpay. 1 Coin = ₹${Number(rate).toLocaleString('en-IN')}`;
+    buildCatButtons();
+    applyFilter();
+  } catch(e) {
+    showGridError('Failed to connect to Nova server.');
+  }
+}
+
+function showGridError(msg) {
+  document.getElementById('productsGrid').innerHTML =
+    `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);font-size:14px;">${msg}</div>`;
+}
+
+function buildCatButtons() {
+  const cats = ['all', ...new Set(S.products.map(p => p.category).filter(Boolean))];
+  const row = document.getElementById('catRow');
+  row.innerHTML = cats.map(c =>
+    `<button class="cat-btn ${c==='all'?'active':''}" data-cat="${c}" onclick="filterCat('${c}')">${c==='all'?'All':capitalize(c)}</button>`
+  ).join('');
+}
+
+function filterCat(cat) {
+  S.currentCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat===cat));
+  applyFilter();
+}
+
+function applyFilter() {
+  S.filtered = S.currentCat === 'all' ? [...S.products] : S.products.filter(p => p.category===S.currentCat);
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('productsGrid');
+  if(!S.filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);">No products found.</div>`;
+    return;
+  }
+  grid.innerHTML = S.filtered.map(p => {
+    const imgHtml = p.image_url
+      ? `<img class="prod-img" src="${p.image_url}" alt="${esc(p.name)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=prod-img-placeholder>⌚</div>'">`
+      : `<div class="prod-img-placeholder">⌚</div>`;
+    const hasCoins = p.coins_enabled && p.price_coins > 0;
+    const hasInr   = p.inr_enabled && p.price_inr > 0;
+    const stockTxt = p.stock <= 0 ? 'Out of stock'
+      : p.stock <= 4 ? `<span class="stock-low">Only ${p.stock} left</span>`
+      : 'In Stock';
+    return `
+    <div class="prod-card" onclick="openDetail(${p.id})">
+      <div class="prod-img-wrap">${imgHtml}</div>
+      <div class="prod-info">
+        <div class="prod-cat">${esc(p.category)}</div>
+        <div class="prod-name">${esc(p.name)}</div>
+        <div class="price-row">
+          ${hasCoins ? `<div class="price-coins"><div class="coin-dot"></div>${p.price_coins}</div>` : ''}
+          ${hasInr   ? `<div class="price-inr">₹${Number(p.price_inr).toLocaleString('en-IN')}</div>` : ''}
+        </div>
+        <div class="pay-tags">
+          ${hasCoins ? `<div class="pay-tag pay-tag-coin"><div class="coin-dot" style="width:10px;height:10px;"></div>Coins</div>` : ''}
+          ${hasInr   ? `<div class="pay-tag pay-tag-inr">₹ INR</div>` : ''}
+        </div>
+        <div class="stock-txt">${stockTxt}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// DETAIL VIEW
+// ════════════════════════════════════════════════════════════
+function openDetail(id) {
+  const p = S.products.find(x => x.id===id);
+  if(!p) return;
+  S.currentProduct = p;
+  S.payMethod = p.coins_enabled ? 'coins' : 'razorpay';
+
+  document.getElementById('gridView').style.display = 'none';
+  document.getElementById('successView').style.display = 'none';
+  document.getElementById('detailView').style.display = 'block';
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  renderDetail(p);
+}
+
+function renderDetail(p) {
+  const svcCoins = parseFloat(S.settings.service_charge_coins || 0);
+  const svcInr   = parseInt(S.settings.service_charge_inr || 0);
+  const totalCoins = p.price_coins + svcCoins;
+  const totalInr   = p.price_inr + svcInr;
+  const userBal  = S.user ? S.user.coinvalue : 0;
+
+  const imgHtml = p.image_url
+    ? `<img class="detail-img" src="${p.image_url}" alt="${esc(p.name)}">`
+    : `<div style="height:300px;display:flex;align-items:center;justify-content:center;font-size:80px;opacity:.15;background:#1a1a1a;border-radius:12px;">⌚</div>`;
+
+  const isOOS = p.stock <= 0;
+  const hasCoins = p.coins_enabled && p.price_coins > 0;
+  const hasInr   = p.inr_enabled && p.price_inr > 0;
+
+  // features
+  let featHtml = '';
+  if(p.features) {
+    const feats = p.features.split('\n').filter(Boolean);
+    if(feats.length) featHtml = `
+      <div style="margin-bottom:18px;">
+        <div class="section-label" style="margin-bottom:8px;">Features</div>
+        ${feats.map(f=>`<div style="font-size:13px;color:var(--muted);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);">◆ ${esc(f)}</div>`).join('')}
+      </div>`;
+  }
+
+  document.getElementById('detailInner').innerHTML = `
+    <div class="detail-img-wrap" onclick="toggleZoom(this)">
+      ${imgHtml}
+      <div class="zoom-hint">Tap to zoom</div>
+    </div>
+
+    <div class="detail-cat">${esc(p.category)}</div>
+    <div class="detail-name">${esc(p.name)}</div>
+    ${p.description ? `<div class="detail-desc">${esc(p.description)}</div>` : ''}
+
+    <div class="price-box">
+      ${hasCoins ? `<div class="price-box-row"><div class="price-box-label">Nova Coins</div><div class="price-box-val gold" style="display:flex;align-items:center;gap:6px;"><div class="coin-dot"></div>${p.price_coins}</div></div>` : ''}
+      ${hasInr   ? `<div class="price-box-row"><div class="price-box-label">Razorpay (INR)</div><div class="price-box-val">₹${Number(p.price_inr).toLocaleString('en-IN')}</div></div>` : ''}
+      <div class="price-box-row price-box-svc"><div>+ Service: ©${svcCoins} / ₹${svcInr}</div></div>
+    </div>
+
+    <div class="stock-line">${p.stock} in stock</div>
+
+    ${featHtml}
+
+    <!-- Payment toggle -->
+    ${!isOOS ? `
+    <div class="pay-toggle" id="payToggle">
+      ${hasCoins ? `<button class="pay-toggle-btn ${S.payMethod==='coins'?'active':''}" id="btnToggleCoins" onclick="switchPay('coins')">
+        <div class="coin-dot" style="width:14px;height:14px;"></div> Coins
+      </button>` : ''}
+      ${hasInr ? `<button class="pay-toggle-btn ${S.payMethod==='razorpay'?'active':''}" id="btnToggleRzp" onclick="switchPay('razorpay')">
+        ₹ Razorpay (INR)
+      </button>` : ''}
+    </div>
+
+    <div class="total-info" id="totalInfo">
+      ${S.payMethod==='coins'
+        ? `Total: <strong>©${totalCoins.toFixed(4)}</strong> (incl. ©${svcCoins} service)<br>Your balance: ©${userBal}`
+        : `Total: <strong>₹${Number(totalInr).toLocaleString('en-IN')}</strong> (incl. ₹${svcInr} service)`}
+    </div>
+
+    <!-- Delivery form -->
+    <div class="section-label">Delivery Information</div>
+    <div class="field-wrap"><input class="field-input" id="dName" placeholder="Full Name *"/></div>
+    <div class="field-wrap"><input class="field-input" id="dPhone" type="tel" placeholder="Phone Number *" maxlength="15"/></div>
+    <div class="map-row">
+      <button class="map-btn" onclick="openMapModal()">Choose on Map</button>
+      <span class="map-hint">or type below</span>
+    </div>
+    <div class="field-wrap"><textarea class="field-input" id="dAddr" rows="2" placeholder="Delivery Address *"></textarea></div>
+
+    ${S.payMethod==='coins' ? `
+      <div class="section-label" style="margin-top:8px;">Your Password (to confirm)</div>
+      <div class="field-wrap"><input class="field-input" id="dPass" type="password" placeholder="Enter password"/></div>
+      <button class="confirm-btn" id="confirmBtn" onclick="placeOrder()">
+        Confirm — ©${totalCoins.toFixed(4)}
+      </button>` : `
+      <button class="confirm-btn" id="confirmBtn" onclick="placeOrder()">
+        Pay ₹${Number(totalInr).toLocaleString('en-IN')} via Razorpay
+      </button>`}
+
+    <div class="msg" id="detailMsg"></div>
+    ` : `<div style="padding:16px;text-align:center;color:var(--danger);font-weight:600;">Out of Stock</div>`}
+  `;
+}
+
+function switchPay(method) {
+  S.payMethod = method;
+  renderDetail(S.currentProduct);
+}
+
+function toggleZoom(el) {
+  const img = el.querySelector('img');
+  if(!img) return;
+  if(img.style.transform) { img.style.transform=''; el.style.cursor='zoom-in'; }
+  else { img.style.transform='scale(1.6)'; el.style.cursor='zoom-out'; }
+}
+
+// ════════════════════════════════════════════════════════════
+// PLACE ORDER
+// ════════════════════════════════════════════════════════════
+async function placeOrder() {
+  if(!S.user) { closeDetail(); openAuth('login'); toast('Please sign in to buy','err'); return; }
+  const p = S.currentProduct;
+  const dName  = (document.getElementById('dName')?.value||'').trim();
+  const dPhone = (document.getElementById('dPhone')?.value||'').trim();
+  const dAddr  = (document.getElementById('dAddr')?.value||'').trim();
+  if(!dName || !dPhone || !dAddr) { showDetailMsg('Please fill Name, Phone and Delivery Address.','err'); return; }
+
+  const shipping = { name: dName, phone: dPhone, address: dAddr };
+
+  if(S.payMethod === 'coins') {
+    const pw = (document.getElementById('dPass')?.value||'').trim();
+    if(!pw) { showDetailMsg('Please enter your password to confirm.','err'); return; }
+    await placeCoinOrder(p, pw, shipping);
+  } else {
+    await placeRazorpayOrder(p, shipping);
+  }
+}
+
+async function placeCoinOrder(p, password, shipping) {
+  setConfirmLoading(true);
+  try {
+    const d = await api('/api/store/order/coin','POST',{
+      product_id: p.id, password, shipping
+    });
+    if(d.ok) {
+      S.user.coinvalue = d.new_balance;
+      document.getElementById('chipCoins').textContent = d.new_balance;
+      showSuccess(`Order #${d.order_no} placed! ©${d.coins_spent} coins spent.`);
+    } else {
+      showDetailMsg(d.error || 'Order failed.','err');
+    }
+  } catch { showDetailMsg('Server error. Please try again.','err'); }
+  setConfirmLoading(false);
+}
+
+async function placeRazorpayOrder(p, shipping) {
+  setConfirmLoading(true);
+  try {
+    const d = await api('/api/store/order/razorpay/create','POST',{ product_id: p.id, shipping });
+    if(!d.ok) { showDetailMsg(d.error || 'Could not create order.','err'); setConfirmLoading(false); return; }
+    S.pendingRzOrder = { ...d, shipping };
+
+    const opts = {
+      key: RAZORPAY_KEY || 'rzp_live_placeholder',
+      amount: d.amount,
+      currency: d.currency || 'INR',
+      name: 'Nova Store',
+      description: d.product_name || p.name,
+      order_id: d.razorpay_order_id,
+      theme: { color: '#c9a030' },
+      prefill: { name: shipping.name, contact: shipping.phone },
+      handler: async function(resp) {
+        await verifyRazorpay(resp, d.order_no, shipping);
+      },
+      modal: { ondismiss: () => { setConfirmLoading(false); } }
+    };
+    setConfirmLoading(false);
+    const rzp = new Razorpay(opts);
+    rzp.open();
+  } catch(e) { showDetailMsg('Payment gateway error: ' + e.message,'err'); setConfirmLoading(false); }
+}
+
+async function verifyRazorpay(resp, orderNo, shipping) {
+  setConfirmLoading(true);
+  try {
+    const d = await api('/api/store/order/razorpay/verify','POST',{
+      razorpay_order_id:  resp.razorpay_order_id,
+      razorpay_payment_id: resp.razorpay_payment_id,
+      razorpay_signature: resp.razorpay_signature,
+      order_no: orderNo,
+      shipping
+    });
+    if(d.ok) showSuccess(`Order #${orderNo} confirmed! Payment verified.`);
+    else showDetailMsg(d.error || 'Verification failed.','err');
+  } catch { showDetailMsg('Verification error.','err'); }
+  setConfirmLoading(false);
+}
+
+function setConfirmLoading(on) {
+  const btn = document.getElementById('confirmBtn');
+  if(!btn) return;
+  btn.disabled = on;
+  if(on) btn.innerHTML = `<div class="spinner" style="border-top-color:#000;margin:0 auto;"></div>`;
+  else renderDetail(S.currentProduct); // re-render to reset btn text
+}
+
+function showDetailMsg(msg, type) {
+  const el = document.getElementById('detailMsg');
+  if(!el) return;
+  el.textContent = msg;
+  el.className = `msg ${type}`;
+}
+
+function showSuccess(text) {
+  document.getElementById('detailView').style.display = 'none';
+  const sv = document.getElementById('successView');
+  sv.style.display = 'block';
+  document.getElementById('successText').textContent = text;
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast(text,'ok');
+}
+
+// ════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════
+function showGrid() {
+  document.getElementById('gridView').style.display = 'block';
+  document.getElementById('detailView').style.display = 'none';
+  document.getElementById('successView').style.display = 'none';
+  S.currentProduct = null;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ════════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════════
+function openAuth(tab) {
+  clearMsg('loginMsg'); clearMsg('regMsg');
+  switchAuthTab(tab);
+  document.getElementById('authOverlay').classList.add('open');
+}
+function closeAuth() { document.getElementById('authOverlay').classList.remove('open'); }
+
+function switchAuthTab(tab) {
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabReg').classList.toggle('active', tab==='register');
+  document.getElementById('panelLogin').style.display = tab==='login'?'block':'none';
+  document.getElementById('panelReg').style.display = tab==='register'?'block':'none';
+  document.getElementById('authModalTitle').textContent = tab==='login'?'Sign In':'Create Account';
+}
+
+async function doLogin() {
+  clearMsg('loginMsg');
+  const code = (document.getElementById('lCode').value||'').trim().toUpperCase();
+  const pass = document.getElementById('lPass').value;
+  if(!code||!pass){ showMsg('loginMsg','Please fill all fields.','err'); return; }
+  setLoading('btnLogin', true, 'Signing in…');
+  try {
+    const d = await api('/api/login','POST',{ code_name: code, password: pass });
+    if(d.ok) { setUser(d); closeAuth(); toast(`Welcome, ${d.code_name}!`,'ok'); }
+    else showMsg('loginMsg', d.error||'Login failed.','err');
+  } catch { showMsg('loginMsg','Server error.','err'); }
+  setLoading('btnLogin', false, 'Sign In');
+}
+
+async function doRegister() {
+  clearMsg('regMsg');
+  const name  = (document.getElementById('rName').value||'').trim();
+  const code  = (document.getElementById('rCode').value||'').trim().toUpperCase();
+  const email = (document.getElementById('rEmail').value||'').trim();
+  const phone = (document.getElementById('rPhone').value||'').trim();
+  const pass  = document.getElementById('rPass').value;
+  const pass2 = document.getElementById('rPass2').value;
+  if(!name||!code||!pass){ showMsg('regMsg','Name, Code Name and Password are required.','err'); return; }
+  if(pass !== pass2){ showMsg('regMsg','Passwords do not match.','err'); return; }
+  setLoading('btnReg', true, 'Creating account…');
+  try {
+    const d = await api('/api/register','POST',{ name, code_name: code, email, phone, password: pass });
+    if(d.ok) {
+      showMsg('regMsg','Account created! Signing you in…','ok');
+      setTimeout(async () => {
+        const ld = await api('/api/login','POST',{ code_name: code, password: pass });
+        if(ld.ok){ setUser(ld); closeAuth(); toast(`Welcome, ${ld.code_name}!`,'ok'); }
+      }, 800);
+    } else showMsg('regMsg', d.error||'Registration failed.','err');
+  } catch { showMsg('regMsg','Server error.','err'); }
+  setLoading('btnReg', false, 'Create Account');
+}
+
+async function doLogout() {
+  try { await api('/api/logout','POST'); } catch {}
+  clearUser();
+  toast('Signed out','ok');
+}
+
+// ════════════════════════════════════════════════════════════
+// MAP MODAL (Leaflet OSM — no API key needed)
+// ════════════════════════════════════════════════════════════
+let leafletLoaded = false, leafletMap = null, leafletMarker = null;
+
+function openMapModal() {
+  document.getElementById('mapOverlay').classList.add('open');
+  if(!leafletLoaded) loadLeaflet();
+  else refreshMap();
+}
+function closeMapModal() { document.getElementById('mapOverlay').classList.remove('open'); }
+
+function loadLeaflet() {
+  const css = document.createElement('link');
+  css.rel='stylesheet'; css.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+  document.head.appendChild(css);
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+  s.onload = initMap; document.head.appendChild(s);
+  leafletLoaded = true;
+}
+
+function initMap() {
+  leafletMap = L.map('map').setView([20.5937, 78.9629], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap'
+  }).addTo(leafletMap);
+  leafletMap.on('click', async e => {
+    const {lat,lng} = e.latlng;
+    S.mapLatLng = {lat,lng};
+    if(leafletMarker) leafletMarker.setLatLng([lat,lng]);
+    else leafletMarker = L.marker([lat,lng]).addTo(leafletMap);
+    document.getElementById('mapAddress').textContent = 'Fetching address…';
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const j = await r.json();
+      document.getElementById('mapAddress').textContent = j.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      S.mapLatLng.address = j.display_name;
+    } catch { document.getElementById('mapAddress').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`; }
+  });
+  // try geolocation
+  if(navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 13);
+    });
+  }
+}
+
+function refreshMap() { if(leafletMap) setTimeout(()=>leafletMap.invalidateSize(), 200); }
+
+function applyMapAddress() {
+  if(!S.mapLatLng) { closeMapModal(); return; }
+  const addr = S.mapLatLng.address || `${S.mapLatLng.lat.toFixed(5)}, ${S.mapLatLng.lng.toFixed(5)}`;
+  const el = document.getElementById('dAddr');
+  if(el) el.value = addr;
+  closeMapModal();
+}
+
+// ════════════════════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════════════════════
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = msg; el.className = `msg ${type}`;
+}
+function clearMsg(id) { const el=document.getElementById(id); if(el){ el.textContent=''; el.className='msg'; el.style.display='none'; } }
+
+function setLoading(btnId, on, txt) {
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  btn.disabled = on;
+  btn.innerHTML = on ? `<div class="spinner" style="margin:0 auto;border-top-color:#000;"></div>` : txt;
+}
+
+function toast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+function esc(s) {
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ESC key
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape') { closeAuth(); closeMapModal(); }
+});
+</script>
+</body>
+</html>

@@ -1378,6 +1378,88 @@ select.field-input option { background: #1a1a1a; color: var(--fg); }
   background: var(--bg);
 }
 #chatView.open { display: flex; }
+
+#chatMessages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #0a0a0a;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  width: 100%;
+}
+#chatMessages::-webkit-scrollbar { width: 3px; }
+#chatMessages::-webkit-scrollbar-track { background: transparent; }
+#chatMessages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.chat-bubble {
+  max-width: 72%;
+  padding: 6px 10px 6px;
+  word-break: break-word;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  box-sizing: border-box;
+  display: inline-block;
+}
+.chat-bubble.mine {
+  align-self: flex-end;
+  background: #005c4b;
+  border-radius: 12px 2px 12px 12px;
+  color: #e9edef;
+}
+.chat-bubble.theirs {
+  align-self: flex-start;
+  background: #1f2c34;
+  border-radius: 2px 12px 12px 12px;
+  color: #e9edef;
+}
+.chat-bubble-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  column-gap: 6px;
+  row-gap: 0;
+}
+.chat-bubble-text {
+  font-size: 14px;
+  line-height: 1.45;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.chat-bubble-time {
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 1px;
+}
+.chat-bubble-ttl {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  text-align: right;
+  line-height: 1;
+  width: 100%;
+}
+.chat-system-msg {
+  align-self: center;
+  color: rgba(255,255,255,0.5);
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 12px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  user-select: none;
+}
+@media (max-width: 360px) {
+  .chat-bubble { max-width: 82%; }
+  .chat-bubble-text { font-size: 13px; }
+}
+
 #chatTerminal::-webkit-scrollbar { width: 4px; }
 #chatTerminal::-webkit-scrollbar-track { background: transparent; }
 #chatTerminal::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.2); border-radius: 2px; }

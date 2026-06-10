@@ -3198,32 +3198,40 @@ function _appendMsg(type, text, expiresIn) {
   const bubble = document.createElement('div');
 
   if (type === 'system') {
-    bubble.style.cssText = "color:rgba(212,175,55,0.45);font-size:11px;font-family:'Courier New',monospace;text-align:center;padding:2px 0;user-select:none;";
+    bubble.className = 'chat-system-msg';
     bubble.textContent = text;
   } else {
     const isMine = (type === 'mine');
-    bubble.style.cssText = [
-      'max-width:78%;padding:8px 12px;border-radius:' + (isMine ? '16px 4px 16px 16px' : '4px 16px 16px 16px') + ';',
-      'word-break:break-word;font-size:14px;line-height:1.5;',
-      'align-self:' + (isMine ? 'flex-end' : 'flex-start') + ';',
-      'background:' + (isMine ? 'rgba(212,175,55,0.15)' : 'rgba(102,178,255,0.1)') + ';',
-      'border:1px solid ' + (isMine ? 'rgba(212,175,55,0.3)' : 'rgba(102,178,255,0.2)') + ';',
-      'color:#e8e8e8;position:relative;',
-    ].join('');
+    bubble.className = 'chat-bubble ' + (isMine ? 'mine' : 'theirs');
 
+    const inner = document.createElement('div');
+    inner.className = 'chat-bubble-inner';
+
+    // Message text
     const textNode = document.createElement('span');
+    textNode.className = 'chat-bubble-text';
     textNode.textContent = text;
-    bubble.appendChild(textNode);
+    inner.appendChild(textNode);
 
-    // TTL countdown chip
+    // Time — inline with text, bottom-right
+    const now = new Date();
+    let h = now.getHours(), mn = now.getMinutes();
+    const ampm = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    const timeEl = document.createElement('span');
+    timeEl.className = 'chat-bubble-time';
+    timeEl.textContent = h + ':' + (mn < 10 ? '0' + mn : mn) + ' ' + ampm;
+    inner.appendChild(timeEl);
+
+    bubble.appendChild(inner);
+
+    // TTL countdown
     if (expiresIn) {
-      const ttl = document.createElement('span');
-      ttl.className = 'msg-ttl';
-      ttl.style.cssText = 'display:block;font-size:10px;color:rgba(255,255,255,0.25);margin-top:3px;text-align:right;';
+      const ttl = document.createElement('div');
+      ttl.className = 'chat-bubble-ttl';
       ttl.textContent = '~' + Math.round(expiresIn) + 's';
       bubble.appendChild(ttl);
 
-      // Countdown + fade
       let remaining = Math.round(expiresIn);
       const ticker = setInterval(() => {
         remaining--;
